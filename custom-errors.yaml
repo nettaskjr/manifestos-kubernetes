@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: error-pages
+  namespace: traefik # Vamos rodar junto com o Traefik
+  labels:
+    app: error-pages
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: error-pages
+  template:
+    metadata:
+      labels:
+        app: error-pages
+    spec:
+      containers:
+        - name: error-pages
+          image: ghcr.io/tarampampam/error-pages:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          env:
+            - name: TEMPLATE_NAME
+              value: "hacker-terminal" # Um tema limpo e moderno. Opções: ghost, l7-light, l7-dark, shuffle
+            - name: SHOW_DETAILS
+              value: "false"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: error-pages
+  namespace: traefik
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: error-pages
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: error-pages-middleware
+  namespace: traefik
+spec:
+  errors:
+    status:
+      - "404"
+      - "500-599"
+    service:
+      name: error-pages
+      port: 80
+    query: "/{status}.html"
