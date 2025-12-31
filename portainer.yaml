@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: portainer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portainer-pvc
+  namespace: portainer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer
+  namespace: portainer
+  labels:
+    app: portainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portainer
+  template:
+    metadata:
+      labels:
+        app: portainer
+    spec:
+      containers:
+        - name: portainer
+          image: portainer/portainer-ce:2.21.5
+          ports:
+            - containerPort: 9000
+              name: http
+            - containerPort: 9443
+              name: https
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: dockersocket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: portainer-pvc
+        - name: dockersocket
+          hostPath:
+            path: /run/k3s/containerd/containerd.sock
+            # Nota: K3s usa containerd. O Portainer precisa de config especifica para K8s ou usar o agente.
+            # Deployment "monolítico" do Portainer no K8s geralmente usa acesso a API do K8s, não socket do Docker,
+            # pois K3s não usa Docker engine por padrão (usa containerd).
+            # A imagem portainer/portainer-ce funciona, mas é melhor configurar args corretos.
+            # Ajuste abaixo para modo Kubernetes.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer
+  namespace: portainer
+spec:
+  selector:
+    app: portainer
+  ports:
+    - name: http
+      port: 9000
+      targetPort: 9000
+    - name: https
+      port: 9443
+      targetPort: 9443
+---
+# IngressRoute para Traefik (padrão no K3s)
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: portainer
+  namespace: portainer
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`portainer.nettask.com.br`) || Host(`portainer.oci.nettask.com.br`)
+      kind: Rule
+      services:
+        - name: portainer
+          port: 9000
