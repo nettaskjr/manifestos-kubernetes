@@ -55,8 +55,7 @@ spec:
       containers:
         - name: portainer
           image: portainer/portainer-ce:2.21.5
-          args:
-            - --kubernetes
+
           ports:
             - containerPort: 9000
               name: http
