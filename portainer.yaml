@@ -84,7 +84,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`portainer.nettask.com.br`) || Host(`portainer.oci.nettask.com.br`)
+    - match: Host(`portainer.<<seu_dominio>>`) || Host(`portainer.oci.<<seu_dominio`)
       kind: Rule
       services:
         - name: portainer
