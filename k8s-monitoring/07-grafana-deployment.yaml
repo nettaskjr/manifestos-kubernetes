@@ -27,11 +27,13 @@ spec:
             - |
               mkdir -p /var/lib/grafana/dashboards/default
               # Kubernetes Cluster
-              curl -sL https://grafana.com/api/dashboards/15757/revisions/37/download -o /var/lib/grafana/dashboards/default/k8s-cluster.json
+              curl -sL https://grafana.com/api/dashboards/15757/revisions/43/download -o /var/lib/grafana/dashboards/default/k8s-cluster.json
               # Node Exporter Full
-              curl -sL https://grafana.com/api/dashboards/1860/revisions/37/download -o /var/lib/grafana/dashboards/default/node-exporter.json
+              curl -sL https://grafana.com/api/dashboards/1860/revisions/42/download -o /var/lib/grafana/dashboards/default/node-exporter.json
               # Loki Logs
-              curl -sL https://grafana.com/api/dashboards/13639/revisions/2/download -o /var/lib/grafana/dashboards/default/loki-logs.json
+              curl -sL https://grafana.com/api/dashboards/15141/revisions/1/download -o /var/lib/grafana/dashboards/default/loki-logs.json
+              # Traefik Ingress
+              curl -sL https://grafana.com/api/dashboards/11462/revisions/1/download -o /var/lib/grafana/dashboards/default/traefik-logs.json
           volumeMounts:
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
