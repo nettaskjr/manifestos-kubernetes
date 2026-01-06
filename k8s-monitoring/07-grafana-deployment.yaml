@@ -19,6 +19,22 @@ spec:
         fsGroup: 472
         runAsGroup: 472
         runAsUser: 472
+      initContainers:
+        - name: download-dashboards
+          image: curlimages/curl
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /var/lib/grafana/dashboards/default
+              # Kubernetes Cluster
+              curl -sL https://grafana.com/api/dashboards/15757/revisions/37/download -o /var/lib/grafana/dashboards/default/k8s-cluster.json
+              # Node Exporter Full
+              curl -sL https://grafana.com/api/dashboards/1860/revisions/37/download -o /var/lib/grafana/dashboards/default/node-exporter.json
+              # Loki Logs
+              curl -sL https://grafana.com/api/dashboards/13639/revisions/2/download -o /var/lib/grafana/dashboards/default/loki-logs.json
+          volumeMounts:
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
       containers:
         - name: grafana
           image: grafana/grafana:10.0.3
@@ -38,6 +54,10 @@ spec:
             - mountPath: /etc/grafana/provisioning/datasources
               name: grafana-datasources
               readOnly: false
+            - mountPath: /etc/grafana/provisioning/dashboards
+              name: grafana-dashboard-provider
+            - mountPath: /var/lib/grafana/dashboards
+              name: grafana-dashboards
       volumes:
         - name: grafana-storage
           persistentVolumeClaim:
@@ -46,6 +66,11 @@ spec:
           configMap:
             defaultMode: 420
             name: grafana-datasources
+        - name: grafana-dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: grafana-dashboards
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
