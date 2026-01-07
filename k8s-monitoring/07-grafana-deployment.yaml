@@ -34,6 +34,9 @@ spec:
               curl -sL https://grafana.com/api/dashboards/15141/revisions/1/download -o /var/lib/grafana/dashboards/default/loki-logs.json
               # Traefik Ingress
               curl -sL https://grafana.com/api/dashboards/11462/revisions/1/download -o /var/lib/grafana/dashboards/default/traefik-logs.json
+              # Correção de Datasources: substitui variáveis pelo nome fixo
+              sed -i 's/${DS_PROMETHEUS}/Prometheus/g' /var/lib/grafana/dashboards/default/*.json
+              sed -i 's/${DS_LOKI}/Loki/g' /var/lib/grafana/dashboards/default/*.json
           volumeMounts:
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
