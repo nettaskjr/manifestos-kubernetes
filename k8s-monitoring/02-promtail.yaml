@@ -91,6 +91,12 @@ data:
             separator: /
             source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
             target_label: __path__
+          # Adiciona label estático CLUSTER para dashboards que filtram por cluster
+          - target_label: cluster
+            replacement: "oci-k3s"
+          # Adiciona label JOB para dashboards que filtram por job
+          - target_label: job
+            replacement: "kubernetes-pods"
 ---
 apiVersion: v1
 kind: ServiceAccount
