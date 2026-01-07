@@ -17,7 +17,7 @@ Abaixo, a estrutura física do projeto. Cada diretório agrupa manifestos de um 
 ├── 📂 Automation/                 # Automação de fluxos de trabalho
 │   └── n8n-stack.yaml             # Stack do n8n (Deployment + Svc + Ingress)
 │
-├── 📂 BD/                         # Bancos de Dados e Backend
+├── 📂 db/                         # Bancos de Dados e Backend
 │   ├── postgres.yaml              # PostgreSQL Standalone
 │   ├── qdrant.yaml                # Banco Vetorial (Qdrant)
 │   ├── redis.yaml                 # Redis (Cache)
@@ -68,7 +68,7 @@ Abaixo, um resumo do que cada stack proporciona para o seu ambiente, acompanhado
 ![n8n](https://img.shields.io/badge/n8n-EA4B71?style=for-the-badge&logo=n8n&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
 *   **n8n** (`Automation/n8n-stack.yaml`): Uma ferramenta de automação de fluxo de trabalho baseada em nós. Imagine conectar o Google Sheets ao seu Banco de Dados e ao Discord sem escrever código.
-*   **Supabase** (`BD/supabase-core.yaml`): Uma alternativa open-source ao Firebase. Oferece Banco de Dados Postgres, Autenticação, API Realtime e Interface de Tabela Instantânea.
+*   **Supabase** (`db/supabase-core.yaml`): Uma alternativa open-source ao Firebase. Oferece Banco de Dados Postgres, Autenticação, API Realtime e Interface de Tabela Instantânea.
 
 ### 3. Inteligência Artificial (LLM)
 ![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white) ![Open WebUI](https://img.shields.io/badge/Open%20WebUI-303030?style=for-the-badge)
@@ -78,9 +78,9 @@ Abaixo, um resumo do que cada stack proporciona para o seu ambiente, acompanhado
 ### 4. Bancos de Dados Especializados
 ![Qdrant](https://img.shields.io/badge/Qdrant-D51F45?style=for-the-badge) ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white) ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 
-*   **Qdrant** (`BD/qdrant.yaml`): Banco de dados vetorial, essencial para criar memórias de longo prazo para seus Agentes de IA (RAG).
-*   **Redis** (`BD/redis.yaml`): Cache em memória ultra-rápido, usado para filas e sessões.
-*   **Postgres** (`BD/postgres.yaml`): Instância standalone do banco de dados relacional mais amado do mundo.
+*   **Qdrant** (`db/qdrant.yaml`): Banco de dados vetorial, essencial para criar memórias de longo prazo para seus Agentes de IA (RAG).
+*   **Redis** (`db/redis.yaml`): Cache em memória ultra-rápido, usado para filas e sessões.
+*   **Postgres** (`db/postgres.yaml`): Instância standalone do banco de dados relacional mais amado do mundo.
 
 ### 5. Web & Ingress
 ![Nginx](https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white) ![Traefik](https://img.shields.io/badge/Traefik-%2303a9f4.svg?style=for-the-badge&logo=traefik&logoColor=white)
@@ -109,7 +109,7 @@ kubectl apply -f k8s-monitoring/
 
 **Exemplo: Subindo o Banco de Dados Vetorial**
 ```bash
-kubectl apply -f BD/qdrant.yaml
+kubectl apply -f db/qdrant.yaml
 ```
 
 **Exemplo: Subindo a Stack de IA**
