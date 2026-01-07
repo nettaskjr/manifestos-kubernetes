@@ -1,0 +1,148 @@
+# 1. Volume para salvar os modelos pesados
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+# 2. Volume para salvar conversas e usuários do WebUI
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webui-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# 3. O Motor (Ollama)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: default
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          # --- ADICIONE ESTE BLOCO ABAIXO CASO QUEIRA LIMITAR O USO DA LLM---
+          resources:
+            limits:
+              cpu: "3000m" # Limita a 3 CPUs (deixe 1 para o sistema)
+              memory: "12Gi" # Limita a 12GB de RAM (ajuste conforme sua instância)
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+          # ----------------------------------
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+      volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: ollama-models
+---
+# 4. Serviço Interno do Ollama
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-svc
+  namespace: default
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+  selector:
+    app: ollama
+---
+# 5. A Interface (Open WebUI)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: default
+  labels:
+    app: open-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama-svc:11434" # Conecta no serviço interno acima
+          volumeMounts:
+            - name: webui-storage
+              mountPath: /app/backend/data
+      volumes:
+        - name: webui-storage
+          persistentVolumeClaim:
+            claimName: webui-data
+---
+# 6. Serviço do WebUI
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui-svc
+  namespace: default
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: open-webui
+---
+# 7. Exposição na Internet (Ingress)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: chat-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: portainer-force-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: chat.<<seu-dominio>>.com.br # <--- MUDE AQUI PARA SEU SUBDOMÍNIO
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-webui-svc
+                port:
+                  number: 80

@@ -1,0 +1,246 @@
+# 1. Configuração de Segredos e Variáveis Globais
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supabase-config
+  namespace: default
+data:
+  POSTGRES_DB: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_PASSWORD: "sua_senha_super_segura_aqui" # MUDE AQUI
+  # Tokens de mentirinha para o lab funcionar. Em prod, gere JWTs reais.
+  ANON_KEY: "eyJh-fake-anon-key-para-lab-apenas"
+  SERVICE_ROLE_KEY: "eyJh-fake-service-key-para-lab-apenas"
+  # URL interna do banco para os serviços
+  DB_URL: "postgres://postgres:sua_senha_super_segura_aqui@supabase-db:5432/postgres"
+
+---
+# 2. Volume do Banco de Dados
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: supabase-db-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# 3. O Banco de Dados (Postgres turbinado)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supabase-db
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supabase-db
+  template:
+    metadata:
+      labels:
+        app: supabase-db
+    spec:
+      containers:
+        - name: db
+          image: supabase/postgres:15.1.0.61
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: supabase-config
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: supabase-db-data
+
+---
+# 4. Serviço do Banco
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-db
+  namespace: default
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: supabase-db
+
+---
+# 5. API PostgREST (Transforma Banco em API REST)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supabase-rest
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supabase-rest
+  template:
+    metadata:
+      labels:
+        app: supabase-rest
+    spec:
+      containers:
+        - name: rest
+          image: postgrest/postgrest:v10.0.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PGRST_DB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: DB_URL
+            - name: PGRST_DB_SCHEMA
+              value: "public"
+            - name: PGRST_DB_ANON_ROLE
+              value: "anon"
+            - name: PGRST_JWT_SECRET
+              value: "uma-string-de-32-caracteres-minimo-aqui!!" # Precisa ser longa
+
+---
+# 6. Serviço da API
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-rest
+  namespace: default
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: supabase-rest
+
+---
+# 7. Postgres Meta (Necessário para o Studio)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supabase-meta
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supabase-meta
+  template:
+    metadata:
+      labels:
+        app: supabase-meta
+    spec:
+      containers:
+        - name: meta
+          image: supabase/postgres-meta:v0.60.6
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PG_META_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: DB_URL
+
+---
+# 8. Serviço do Meta
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-meta
+  namespace: default
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: supabase-meta
+
+---
+# 9. Supabase Studio (A Interface Visual)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supabase-studio
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supabase-studio
+  template:
+    metadata:
+      labels:
+        app: supabase-studio
+    spec:
+      containers:
+        - name: studio
+          image: supabase/studio:20240101-83785f8
+          ports:
+            - containerPort: 3000
+          env:
+            - name: STUDIO_PG_META_URL
+              value: "http://supabase-meta:8080"
+            - name: SUPABASE_URL
+              value: "http://supabase-rest:3000" # Aponta para a API REST interna
+            - name: SUPABASE_PUBLIC_URL
+              value: "https://supabase.<<seu-dominio>>" # <--- MUDE AQUI
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: ANON_KEY
+            - name: SUPABASE_SERVICE_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: SERVICE_ROLE_KEY
+
+---
+# 10. Serviço do Studio
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-studio-svc
+  namespace: default
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: supabase-studio
+
+---
+# 11. Ingress (Acesso Externo)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: supabase-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: portainer-force-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: supabase.<<seu-dominio>> # <--- MUDE AQUI
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supabase-studio-svc
+                port:
+                  number: 3000

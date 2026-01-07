@@ -1,0 +1,91 @@
+# 1. Definição do Volume (Para salvar seus workflows)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: n8n-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi # 5GB de espaço, suficiente para começar
+---
+# 2. A Aplicação n8n
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: default
+  labels:
+    app: n8n
+spec:
+  replicas: 1 # n8n community não escala horizontalmente (use sempre 1)
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      containers:
+        - name: n8n
+          image: n8nio/n8n:latest
+          ports:
+            - containerPort: 5678
+          env:
+            - name: N8N_HOST
+              value: "n8n.seudominio.com.br"
+            - name: N8N_PORT
+              value: "5678"
+            - name: N8N_PROTOCOL
+              value: "https"
+            - name: WEBHOOK_URL
+              value: "https://n8n.seudominio.com.br/"
+            - name: GENERIC_TIMEZONE
+              value: "America/Sao_Paulo"
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/.n8n
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: n8n-data
+---
+# 3. Serviço Interno
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-svc
+  namespace: default
+spec:
+  ports:
+    - port: 5678
+      targetPort: 5678
+  selector:
+    app: n8n
+---
+# 4. Rota de Acesso (Ingress)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: n8n-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # Reusando o middleware que corrige o erro "Origin Invalid"
+    traefik.ingress.kubernetes.io/router.middlewares: portainer-force-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: n8n.<<seu-dominio>> # <--- MUDE AQUI
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: n8n-svc
+                port:
+                  number: 5678
