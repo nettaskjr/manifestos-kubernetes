@@ -49,6 +49,18 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-storage

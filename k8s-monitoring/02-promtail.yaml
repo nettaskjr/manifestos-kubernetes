@@ -31,6 +31,25 @@ spec:
             - name: pods
               mountPath: /var/log/pods
               readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 9080
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9080
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
           env:
             - name: HOSTNAME
               valueFrom:
