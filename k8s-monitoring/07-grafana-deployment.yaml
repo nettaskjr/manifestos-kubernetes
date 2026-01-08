@@ -20,26 +20,22 @@ spec:
         runAsGroup: 472
         runAsUser: 472
       initContainers:
-        - name: download-dashboards
-          image: curlimages/curl
+        - name: load-dashboards
+          image: busybox:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
               mkdir -p /var/lib/grafana/dashboards/default
-              # Kubernetes Cluster
-              curl -sL https://grafana.com/api/dashboards/15757/revisions/43/download -o /var/lib/grafana/dashboards/default/k8s-cluster.json
-              # Node Exporter Full
-              curl -sL https://grafana.com/api/dashboards/1860/revisions/42/download -o /var/lib/grafana/dashboards/default/node-exporter.json
-              # Loki Logs
-              curl -sL https://grafana.com/api/dashboards/13639/revisions/2/download -o /var/lib/grafana/dashboards/default/loki-logs.json
-              # Traefik Ingress
-              curl -sL https://grafana.com/api/dashboards/11462/revisions/1/download -o /var/lib/grafana/dashboards/default/traefik-logs.json
-              # Correção de Datasources: substitui variáveis pelo nome fixo
-              sed -i 's/${DS_PROMETHEUS}/Prometheus/g' /var/lib/grafana/dashboards/default/*.json
-              sed -i 's/${DS_LOKI}/Loki/g' /var/lib/grafana/dashboards/default/*.json
+              echo "Copiando Dashboards do repositório GitOps..."
+              # Copia os JSONs da pasta montada do Host (Repo clonado)
+              cp /mnt/stack/k8s-monitoring/dashboards/*.json /var/lib/grafana/dashboards/default/
+              echo "Cópia concluída!"
           volumeMounts:
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
+            - name: repo-stack
+              mountPath: /mnt/stack
+              readOnly: true
       containers:
         - name: grafana
           image: grafana/grafana:10.0.3
@@ -76,6 +72,10 @@ spec:
             name: grafana-dashboard-provider
         - name: grafana-dashboards
           emptyDir: {}
+        - name: repo-stack
+          hostPath:
+            # Placeholder para ser substituído pelo Terraform
+            path: <<user-home>>/.stack
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
