@@ -21,13 +21,12 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
-    # Regra que bate com tudo que NÃO foi processado por outras regras com prioridade maior
-    # Como as rotas específicas (Grafana, Portainer) têm prioridade maior por serem longer match ou definirem host exato,
-    # esta regra pega o resto.
-    # Usamos uma regex generica ou HostRegexp(`{host:.+}`)
+    # Regra com prioridade 1 (a mais baixa possível) para pegar apenas o que sobrar
     - match: HostRegexp(`{host:.+}`)
       kind: Rule
+      priority: 1
       services:
         - name: error-page
           port: 80
