@@ -1,0 +1,35 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: error-pages-middleware
+  namespace: error-pages
+spec:
+  errors:
+    status:
+      - "404"
+    service:
+      name: error-page
+      port: 80
+    query: /
+---
+# Ingress Default para qualquer domínio não mapeado (Catch-all)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: catch-all
+  namespace: error-pages
+spec:
+  entryPoints:
+    - web
+  routes:
+    # Regra que bate com tudo que NÃO foi processado por outras regras com prioridade maior
+    # Como as rotas específicas (Grafana, Portainer) têm prioridade maior por serem longer match ou definirem host exato,
+    # esta regra pega o resto.
+    # Usamos uma regex generica ou HostRegexp(`{host:.+}`)
+    - match: HostRegexp(`{host:.+}`)
+      kind: Rule
+      services:
+        - name: error-page
+          port: 80
+      middlewares:
+        - name: error-pages-middleware
