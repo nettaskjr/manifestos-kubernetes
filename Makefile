@@ -1,4 +1,4 @@
-.PHONY: help install-all install-monitoring install-portainer install-error-page install-pg install-redis install-qdrant install-supabase install-n8n install-llm install-nginx install-whoami install-chatwoot install-evolution install-minio install-rabbitmq delete-all delete-monitoring delete-portainer delete-error-page delete-pg delete-redis delete-qdrant delete-supabase delete-n8n delete-llm delete-nginx delete-whoami delete-chatwoot delete-evolution delete-minio delete-rabbitmq
+.PHONY: help install-all install-monitoring install-portainer install-error-page install-pg install-redis install-qdrant install-supabase install-n8n install-llm install-nginx install-whoami install-chatwoot install-evolution install-minio install-rabbitmq install-nextcloud delete-all delete-monitoring delete-portainer delete-error-page delete-pg delete-redis delete-qdrant delete-supabase delete-n8n delete-llm delete-nginx delete-whoami delete-chatwoot delete-evolution delete-minio delete-rabbitmq delete-nextcloud
 
 help:
 	@echo "🛠️  Comandos disponíveis no Home Lab Kubernetes"
@@ -17,6 +17,7 @@ help:
 	@echo "  make install-qdrant     - Qdrant Vector DB (Qdrant/)"
 	@echo "  make install-supabase   - Supabase Stack (Supabase/)"
 	@echo "  make install-minio      - MinIO Object Storage (MinIO/)"
+	@echo "  make install-nextcloud  - Nextcloud Suite (Nextcloud/)"
 	@echo ""
 	@echo "🤖 Automação & CRM:"
 	@echo "  make install-n8n        - n8n Workflow (n8n/)"
@@ -35,7 +36,7 @@ help:
 
 # --- Instalação ---
 
-install-all: install-portainer install-monitoring install-error-page install-pg install-redis install-qdrant install-minio install-rabbitmq install-supabase install-n8n install-chatwoot install-evolution install-llm install-nginx install-whoami
+install-all: install-portainer install-monitoring install-error-page install-pg install-redis install-qdrant install-minio install-rabbitmq install-supabase install-n8n install-chatwoot install-evolution install-nextcloud install-llm install-nginx install-whoami
 	@echo "✅ Toda a infraestrutura foi solicitada!"
 
 install-monitoring:
@@ -86,6 +87,10 @@ install-evolution:
 	@echo "📱 Instalando EvolutionAPI..."
 	kubectl apply -f EvolutionAPI/
 
+install-nextcloud:
+	@echo "☁️  Instalando Nextcloud..."
+	kubectl apply -f Nextcloud/
+
 install-llm:
 	@echo "🧠 Instalando IA (Ollama)..."
 	kubectl apply -f Ollama/
@@ -100,7 +105,7 @@ install-whoami:
 
 # --- Remoção ---
 
-delete-all: delete-whoami delete-nginx delete-llm delete-evolution delete-chatwoot delete-n8n delete-supabase delete-rabbitmq delete-minio delete-qdrant delete-redis delete-pg delete-error-page delete-monitoring delete-portainer
+delete-all: delete-whoami delete-nginx delete-llm delete-nextcloud delete-evolution delete-chatwoot delete-n8n delete-supabase delete-rabbitmq delete-minio delete-qdrant delete-redis delete-pg delete-error-page delete-monitoring delete-portainer
 	@echo "🔥 Tudo removido!"
 
 delete-monitoring:
@@ -138,6 +143,9 @@ delete-chatwoot:
 
 delete-evolution:
 	kubectl delete -f EvolutionAPI/ --ignore-not-found
+
+delete-nextcloud:
+	kubectl delete -f Nextcloud/ --ignore-not-found
 
 delete-llm:
 	kubectl delete -f Ollama/ --ignore-not-found

@@ -20,6 +20,7 @@ Abaixo, a estrutura física do projeto. Cada diretório agora corresponde a uma 
 ├── 📂 k8s-monitoring/             # Stack de Observabilidade (Prometheus, Grafana, Loki)
 ├── 📂 MinIO/                      # [NOVO] Object Storage (S3 Compatible)
 ├── 📂 n8n/                        # Automação: n8n Workflow Automation
+├── 📂 Nextcloud/                  # [NOVO] Nuvem pessoal (Arquivos, Fotos, etc.)
 ├── 📂 Nginx/                      # Servidor Web: Nginx
 ├── 📂 Ollama/                     # IA: Ollama + Open WebUI (antigo llm)
 ├── 📂 Portainer/                  # Gerenciamento: Portainer
@@ -53,11 +54,12 @@ Abaixo, um resumo do que cada stack proporciona:
 *   **EvolutionAPI** (`EvolutionAPI/`): API para integração com WhatsApp.
 *   **RabbitMQ** (`RabbitMQ/`): Broker de mensagens para aplicações distribuídas.
 
-### 3. Backend & Storage
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) ![MinIO](https://img.shields.io/badge/MinIO-C72C48?style=for-the-badge&logo=minio&logoColor=white)
+### 3. Backend, Storage & Colaboração
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) ![MinIO](https://img.shields.io/badge/MinIO-C72C48?style=for-the-badge&logo=minio&logoColor=white) ![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=for-the-badge&logo=nextcloud&logoColor=white)
 
 *   **Supabase** (`Supabase/`): Alternativa open-source ao Firebase.
 *   **MinIO** (`MinIO/`): Armazenamento de objetos compatível com S3 (High Performance).
+*   **Nextcloud** (`Nextcloud/`): Suite de produtividade (Google Drive/Dropbox Open Source).
 
 ### 4. Inteligência Artificial
 ![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
@@ -120,6 +122,7 @@ Se configurado corretamente com seu domínio e Ingress:
 *   **n8n**: `https://n8n.seudominio.com.br`
 *   **Open WebUI**: `https://chat.seudominio.com.br`
 *   **Supabase**: `https://supabase.seudominio.com.br`
+*   **Nextcloud**: `https://drive.seudominio.com.br`
 *   **Chatwoot**: (Configurar no Ingress)
 
 > **Nota**: Certifique-se de configurar o DNS apontando para o seu cluster.
