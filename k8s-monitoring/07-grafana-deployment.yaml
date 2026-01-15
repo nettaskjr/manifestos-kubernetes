@@ -34,6 +34,7 @@ spec:
                   echo "Descomprimido: $filename"
                 fi
               done
+              chown -R 472:472 /var/lib/grafana/dashboards
               echo "Concluído!"
           volumeMounts:
             - name: grafana-dashboards
