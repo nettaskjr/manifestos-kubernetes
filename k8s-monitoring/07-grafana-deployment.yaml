@@ -15,6 +15,10 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        fsGroup: 472
+        runAsGroup: 472
+        runAsUser: 472
       initContainers:
         - name: load-dashboards
           securityContext:
@@ -42,10 +46,6 @@ spec:
               readOnly: true
       containers:
         - name: grafana
-          securityContext:
-            fsGroup: 472
-            runAsGroup: 472
-            runAsUser: 472
           image: grafana/grafana:10.0.3
           ports:
             - containerPort: 3000
