@@ -21,21 +21,17 @@ spec:
         runAsUser: 472
       initContainers:
         - name: load-dashboards
-          image: busybox:latest
+          image: alpine/git
           command: ["/bin/sh", "-c"]
           args:
             - |
+              git clone --depth 1 https://github.com/nettaskjr/manifestos-kubernetes.git /tmp/repo
               mkdir -p /var/lib/grafana/dashboards/default
-              echo "Copiando Dashboards do repositório GitOps..."
-              # Copia os JSONs da pasta montada do Host (Repo clonado)
-              cp /mnt/stack/k8s-monitoring/dashboards/*.json /var/lib/grafana/dashboards/default/
-              echo "Cópia concluída!"
+              cp /tmp/repo/k8s-monitoring/dashboards/*.json /var/lib/grafana/dashboards/default/
+              echo "Dashboards clonados com sucesso!"
           volumeMounts:
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
-            - name: repo-stack
-              mountPath: /mnt/stack
-              readOnly: true
       containers:
         - name: grafana
           image: grafana/grafana:10.0.3
@@ -88,10 +84,6 @@ spec:
             name: grafana-dashboard-provider
         - name: grafana-dashboards
           emptyDir: {}
-        - name: repo-stack
-          hostPath:
-            # Placeholder para ser substituído pelo Terraform
-            path: <<user-home>>/.stack
 
 ---
 apiVersion: v1
