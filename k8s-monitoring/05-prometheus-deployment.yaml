@@ -55,20 +55,8 @@ spec:
             defaultMode: 420
             name: prometheus-server-conf
         - name: prometheus-storage-volume
-          persistentVolumeClaim:
-            claimName: prometheus-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: prometheus-pvc
-  namespace: monitoring
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+          emptyDir: {}
+
 ---
 apiVersion: v1
 kind: Service
