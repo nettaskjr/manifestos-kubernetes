@@ -1,26 +1,94 @@
-# 1. Definição do Volume (Para salvar seus workflows)
+# 1. Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: automation
+
+---
+# 2. Persistência (PVC) para o Postgres e n8n
+# O K3s usa o 'local-path' por padrão, que é perfeito aqui.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: n8n-data
-  namespace: default
+  name: postgres-pvc
+  namespace: automation
 spec:
-  accessModes:
-    - ReadWriteOnce
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: local-path
   resources:
     requests:
-      storage: 5Gi # 5GB de espaço, suficiente para começar
+      storage: 1Gi
 ---
-# 2. A Aplicação n8n
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: n8n-pvc
+  namespace: automation
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# 3. Banco de Dados Interno (Postgres)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: automation
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13-alpine
+        env:
+        - name: POSTGRES_USER
+          value: n8n
+        - name: POSTGRES_PASSWORD
+          value: "<<postgres-n8n-pass>>" # ALTERE AQUI
+        - name: POSTGRES_DB
+          value: n8n
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: automation
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+
+---
+# 4. Aplicação n8n
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: n8n
-  namespace: default
+  namespace: automation
   labels:
     app: n8n
 spec:
-  replicas: 1 # n8n community não escala horizontalmente (use sempre 1)
+  replicas: 1
   selector:
     matchLabels:
       app: n8n
@@ -30,62 +98,71 @@ spec:
         app: n8n
     spec:
       containers:
-        - name: n8n
-          image: n8nio/n8n:latest
-          ports:
-            - containerPort: 5678
-          env:
-            - name: N8N_HOST
-              value: "n8n.seudominio.com.br"
-            - name: N8N_PORT
-              value: "5678"
-            - name: N8N_PROTOCOL
-              value: "https"
-            - name: WEBHOOK_URL
-              value: "https://n8n.seudominio.com.br/"
-            - name: GENERIC_TIMEZONE
-              value: "America/Sao_Paulo"
-          volumeMounts:
-            - name: data
-              mountPath: /home/node/.n8n
+      - name: n8n
+        image: n8nio/n8n:latest
+        ports:
+        - containerPort: 5678
+        env:
+        - name: GENERIC_TIMEZONE
+          value: "America/Sao_Paulo"
+        - name: DB_TYPE
+          value: "postgresdb"
+        - name: DB_POSTGRESDB_HOST
+          value: "postgres"
+        - name: DB_POSTGRESDB_PORT
+          value: "5432"
+        - name: DB_POSTGRESDB_DATABASE
+          value: "n8n"
+        - name: DB_POSTGRESDB_USER
+          value: "n8n"
+        - name: DB_POSTGRESDB_PASSWORD
+          value: "<<postgres-n8n-pass>>" # MESMA SENHA DO POSTGRES ACIMA
+        - name: N8N_ENCRYPTION_KEY
+          value: "oivladX8/ipOYY8PCVLa1Sw34igXSvJ1zvUDY+aO0CI7343rxjZUEePB" # GERE UMA CHAVE ÚNICA use $ openssl rand -base64 42
+        # Configuração para o Webhook funcionar corretamente atrás do Traefik
+        - name: WEBHOOK_URL
+          value: "https://n8n.<<seu-dominio>>" # ALTERE PARA SEU DOMÍNIO
+        volumeMounts:
+        - name: n8n-storage
+          mountPath: /home/node/.n8n
       volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: n8n-data
+      - name: n8n-storage
+        persistentVolumeClaim:
+          claimName: n8n-pvc
+
 ---
-# 3. Serviço Interno
 apiVersion: v1
 kind: Service
 metadata:
-  name: n8n-svc
-  namespace: default
+  name: n8n
+  namespace: automation
 spec:
-  ports:
-    - port: 5678
-      targetPort: 5678
   selector:
     app: n8n
+  ports:
+  - port: 5678
+    targetPort: 5678
+
 ---
-# 4. Rota de Acesso (Ingress)
+# 5. Ingress (Traefik)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: n8n-ingress
-  namespace: default
+  namespace: automation
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-    # Reusando o middleware que corrige o erro "Origin Invalid"
-    traefik.ingress.kubernetes.io/router.middlewares: portainer-force-https@kubernetescrd
+    kubernetes.io/ingress.class: traefik
+    # Se você usa Cert-Manager para SSL automático:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod" 
 spec:
-  ingressClassName: traefik
   rules:
-    - host: n8n.<<seu-dominio>> # <--- MUDE AQUI
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: n8n-svc
-                port:
-                  number: 5678
+  - host: n8n.<<seu-dominio>> # ALTERE PARA SEU DOMÍNIO
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: n8n
+            port:
+              number: 5678
