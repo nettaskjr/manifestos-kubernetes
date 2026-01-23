@@ -13,7 +13,7 @@ metadata:
   name: postgres-pvc
   namespace: automation
 spec:
-  accessModes: [ "ReadWriteOnce" ]
+  accessModes: ["ReadWriteOnce"]
   storageClassName: local-path
   resources:
     requests:
@@ -25,7 +25,7 @@ metadata:
   name: n8n-pvc
   namespace: automation
 spec:
-  accessModes: [ "ReadWriteOnce" ]
+  accessModes: ["ReadWriteOnce"]
   storageClassName: local-path
   resources:
     requests:
@@ -48,24 +48,24 @@ spec:
         app: postgres
     spec:
       containers:
-      - name: postgres
-        image: postgres:13-alpine
-        env:
-        - name: POSTGRES_USER
-          value: n8n
-        - name: POSTGRES_PASSWORD
-          value: "<<postgres-n8n-pass>>" # ALTERE AQUI
-        - name: POSTGRES_DB
-          value: n8n
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
+        - name: postgres
+          image: postgres:13-alpine
+          env:
+            - name: POSTGRES_USER
+              value: n8n
+            - name: POSTGRES_PASSWORD
+              value: "<<postgres-n8n-pass>>" # ALTERE AQUI
+            - name: POSTGRES_DB
+              value: n8n
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       volumes:
-      - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -76,7 +76,7 @@ spec:
   selector:
     app: postgres
   ports:
-  - port: 5432
+    - port: 5432
 
 ---
 # 4. Aplicação n8n
@@ -98,38 +98,45 @@ spec:
         app: n8n
     spec:
       containers:
-      - name: n8n
-        image: n8nio/n8n:latest
-        ports:
-        - containerPort: 5678
-        env:
-        - name: GENERIC_TIMEZONE
-          value: "America/Sao_Paulo"
-        - name: DB_TYPE
-          value: "postgresdb"
-        - name: DB_POSTGRESDB_HOST
-          value: "postgres"
-        - name: DB_POSTGRESDB_PORT
-          value: "5432"
-        - name: DB_POSTGRESDB_DATABASE
-          value: "n8n"
-        - name: DB_POSTGRESDB_USER
-          value: "n8n"
-        - name: DB_POSTGRESDB_PASSWORD
-          value: "<<postgres-n8n-pass>>" # MESMA SENHA DO POSTGRES ACIMA
-        - name: N8N_ENCRYPTION_KEY
-          value: "oivladX8/ipOYY8PCVLa1Sw34igXSvJ1zvUDY+aO0CI7343rxjZUEePB" # GERE UMA CHAVE ÚNICA use $ openssl rand -base64 42
-        # Configuração para o Webhook funcionar corretamente atrás do Traefik
-        - name: WEBHOOK_URL
-          value: "https://n8n.<<seu-dominio>>" # ALTERE PARA SEU DOMÍNIO
-        volumeMounts:
-        - name: n8n-storage
-          mountPath: /home/node/.n8n
+        - name: n8n
+          image: n8nio/n8n:latest
+          ports:
+            - containerPort: 5678
+          env:
+            - name: GENERIC_TIMEZONE
+              value: "America/Sao_Paulo"
+            - name: DB_TYPE
+              value: "postgresdb"
+            - name: DB_POSTGRESDB_HOST
+              value: "postgres"
+            - name: DB_POSTGRESDB_PORT
+              value: "5432"
+            - name: DB_POSTGRESDB_DATABASE
+              value: "n8n"
+            - name: DB_POSTGRESDB_USER
+              value: "n8n"
+            - name: DB_POSTGRESDB_PASSWORD
+              value: "<<postgres-n8n-pass>>" # MESMA SENHA DO POSTGRES ACIMA
+            - name: N8N_ENCRYPTION_KEY
+              value: "<<n8n-encryption-key>>" # GERE UMA CHAVE ÚNICA use $ openssl rand -base64 42
+            - name: TNS_ADMIN
+              value: "/opt/n8n/oracle-wallet"
+            # Configuração para o Webhook funcionar corretamente atrás do Traefik
+            - name: WEBHOOK_URL
+              value: "https://n8n.<<seu-dominio>>" # ALTERE PARA SEU DOMÍNIO
+          volumeMounts:
+            - name: n8n-storage
+              mountPath: /home/node/.n8n
+            - name: oracle-wallet-volume
+              mountPath: /opt/n8n/oracle-wallet
+              readOnly: true
       volumes:
-      - name: n8n-storage
-        persistentVolumeClaim:
-          claimName: n8n-pvc
-
+        - name: n8n-storage
+          persistentVolumeClaim:
+            claimName: n8n-pvc
+        - name: oracle-wallet-volume
+          secret:
+            secretName: oracle-wallet
 ---
 apiVersion: v1
 kind: Service
@@ -140,8 +147,8 @@ spec:
   selector:
     app: n8n
   ports:
-  - port: 5678
-    targetPort: 5678
+    - port: 5678
+      targetPort: 5678
 
 ---
 # 5. Ingress (Traefik)
@@ -153,16 +160,16 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
     # Se você usa Cert-Manager para SSL automático:
-    # cert-manager.io/cluster-issuer: "letsencrypt-prod" 
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   rules:
-  - host: n8n.<<seu-dominio>> # ALTERE PARA SEU DOMÍNIO
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: n8n
-            port:
-              number: 5678
+    - host: n8n.<<seu-dominio>> # ALTERE PARA SEU DOMÍNIO
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: n8n
+                port:
+                  number: 5678
