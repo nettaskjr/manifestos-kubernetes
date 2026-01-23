@@ -127,16 +127,16 @@ spec:
           volumeMounts:
             - name: n8n-storage
               mountPath: /home/node/.n8n
-            #- name: oracle-wallet-volume
-            #  mountPath: /opt/n8n/oracle-wallet
-            #  readOnly: true
+            - name: oracle-wallet-volume
+              mountPath: /opt/n8n/oracle-wallet
+              readOnly: true
       volumes:
         - name: n8n-storage
           persistentVolumeClaim:
             claimName: n8n-pvc
-        #- name: oracle-wallet-volume
-        #  secret:
-        #    secretName: oracle-wallet
+        - name: oracle-wallet-volume
+          secret:
+            secretName: oracle-wallet
 ---
 apiVersion: v1
 kind: Service
