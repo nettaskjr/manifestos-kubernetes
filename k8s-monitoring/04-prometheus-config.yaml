@@ -86,3 +86,14 @@ data:
           target_label: __address__
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
+          
+      - job_name: 'external-amd-nodes'
+        static_configs:
+          - targets: ['10.0.1.118:9100'] # IP do Banco de Dados (PostgreSQL)
+            labels:
+              instance: 'database-postgres'
+              role: 'db'
+          - targets: ['10.0.1.211:9100'] # IP do Storage (MinIO)
+            labels:
+              instance: 'storage-minio'
+              role: 'storage'
