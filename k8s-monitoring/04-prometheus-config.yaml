@@ -56,7 +56,6 @@ data:
           action: replace
           target_label: kubernetes_name
 
-
       - job_name: 'kubernetes-nodes'
         scheme: https
         tls_config:
@@ -89,11 +88,11 @@ data:
           
       - job_name: 'external-amd-nodes'
         static_configs:
-          - targets: ['10.0.1.118:9100'] # IP do Banco de Dados (PostgreSQL)
+          - targets: ['<<db-ip>>:9100'] # IP Dinâmico do Database
             labels:
               instance: 'database-postgres'
               role: 'db'
-          - targets: ['10.0.1.211:9100'] # IP do Storage (MinIO)
+          - targets: ['<<storage-ip>>:9100'] # IP Dinâmico do Storage
             labels:
               instance: 'storage-minio'
               role: 'storage'
