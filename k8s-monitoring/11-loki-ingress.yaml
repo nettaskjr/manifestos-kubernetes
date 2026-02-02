@@ -7,8 +7,8 @@ spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`loki.<<seu-dominio>>`) || Host(`<<k8s-internal-dns>>`)
-    kind: Rule
-    services:
-    - name: loki
-      port: 3100
+    - match: Host(`loki.nettask.com.br`) || Host(`nettask-com-br.public.mainvcn.oraclevcn.com`)
+      kind: Rule
+      services:
+        - name: loki
+          port: 3100
