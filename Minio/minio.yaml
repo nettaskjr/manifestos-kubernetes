@@ -64,6 +64,7 @@ spec:
           volumeMounts:
             - name: minio-storage
               mountPath: /data
+              subPath: miniodata
       volumes:
         - name: minio-storage
           persistentVolumeClaim:
