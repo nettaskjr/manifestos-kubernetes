@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudbeaver
+  namespace: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudbeaver
+  template:
+    metadata:
+      labels:
+        app: cloudbeaver
+    spec:
+      containers:
+        - name: cloudbeaver
+          image: dbeaver/cloudbeaver:latest
+          ports:
+            - containerPort: 8978
+          volumeMounts:
+            - name: cloudbeaver-data
+              mountPath: /opt/cloudbeaver/workspace
+      volumes:
+        - name: cloudbeaver-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbeaver
+  namespace: database
+spec:
+  ports:
+    - port: 8978
+  selector:
+    app: cloudbeaver
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: cloudbeaver-ingress
+  namespace: database
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`db.<<seu-dominio>>`)
+      kind: Rule
+      services:
+        - name: cloudbeaver
+          port: 8978
