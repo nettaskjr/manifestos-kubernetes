@@ -22,7 +22,7 @@ spec:
             - name: cloudbeaver-data
               mountPath: /opt/cloudbeaver/workspace
             - name: cloudbeaver-config
-              mountPath: /opt/cloudbeaver/workspace/General/.dbeaver/data-sources.json
+              mountPath: /opt/cloudbeaver/workspace/GlobalConfiguration/.dbeaver/data-sources.json
               subPath: data-sources.json
       volumes:
         - name: cloudbeaver-data
