@@ -53,10 +53,15 @@ data:
             "url": "jdbc:postgresql://postgres.database:5432/<<db-name>>",
             "configurationType": "MANUAL",
             "type": "dev",
+            "properties": {
+              "user": "<<db-user>>",
+              "password": "<<db-pass>>"
+            },
             "authProperties": {
               "user": "<<db-user>>",
               "password": "<<db-pass>>"
-            }
+            },
+            "authModel": "native"
           }
         }
       }
