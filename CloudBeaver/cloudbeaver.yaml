@@ -21,9 +21,46 @@ spec:
           volumeMounts:
             - name: cloudbeaver-data
               mountPath: /opt/cloudbeaver/workspace
+            - name: cloudbeaver-config
+              mountPath: /opt/cloudbeaver/workspace/General/.dbeaver/data-sources.json
+              subPath: data-sources.json
       volumes:
         - name: cloudbeaver-data
           emptyDir: {}
+        - name: cloudbeaver-config
+          configMap:
+            name: cloudbeaver-datasources
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbeaver-datasources
+  namespace: database
+data:
+  data-sources.json: |
+    {
+      "folders": {},
+      "connections": {
+        "postgres-jdbc-infra": {
+          "provider": "postgresql",
+          "driver": "postgres-jdbc",
+          "name": "OCI PostgreSQL",
+          "save-password": true,
+          "configuration": {
+            "host": "postgres.database",
+            "port": "5432",
+            "database": "<<db-name>>",
+            "url": "jdbc:postgresql://postgres.database:5432/<<db-name>>",
+            "configurationType": "MANUAL",
+            "type": "dev",
+            "authProperties": {
+              "user": "<<db-user>>",
+              "password": "<<db-pass>>"
+            }
+          }
+        }
+      }
+    }
 ---
 apiVersion: v1
 kind: Service
