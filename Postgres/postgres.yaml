@@ -50,11 +50,20 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
-              value: "<<db-name>>"
+              valueFrom:
+                configMapKeyRef:
+                  name: infra-config
+                  key: db-name
             - name: POSTGRES_USER
-              value: "<<db-user>>"
+              valueFrom:
+                secretKeyRef:
+                  name: infra-secrets
+                  key: db-user
             - name: POSTGRES_PASSWORD
-              value: "<<db-pass>>"
+              valueFrom:
+                secretKeyRef:
+                  name: infra-secrets
+                  key: db-pass
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data

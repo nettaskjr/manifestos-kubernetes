@@ -52,9 +52,15 @@ spec:
               name: http-grafana
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: "<<grafana-user>>"
+              valueFrom:
+                configMapKeyRef:
+                  name: infra-config
+                  key: grafana-admin-user
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "<<grafana-pass>>"
+              valueFrom:
+                secretKeyRef:
+                  name: infra-secrets
+                  key: grafana-admin-password
           resources:
             requests:
               memory: "128Mi"
