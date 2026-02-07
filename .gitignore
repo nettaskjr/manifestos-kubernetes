@@ -1,0 +1,19 @@
+# Kubernetes Manifests Base - Segurança
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# Infra Context & Secrets
+context.env
+k8s-secrets/
+.env*
+secrets.yaml
+
+# Scripts & Temporários
+# Permitir apenas o sync script
+!k8s-sync.sh
+tmp/
+*.log
+.DS_Store
