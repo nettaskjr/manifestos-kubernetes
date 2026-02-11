@@ -11,56 +11,57 @@ spec:
       template:
         spec:
           containers:
-          - name: postgres-backup
-            image: amazon/aws-cli:latest
-            command:
-            - /bin/sh
-            - -c
-            - |
-              echo "Iniciando backup para S3..."
-              DATE=$(date +%Y-%m-%d_%H-%M-%S)
-              FILENAME="backup_all_$DATE.sql.gz"
-              
-              # Instalar postgres-client para ter o pg_dumpall
-              yum install -y postgresql16
-              
-              export PGPASSWORD=$DB_PASSWORD
-              pg_dumpall -h $DB_HOST -U $DB_USER | gzip | aws s3 cp - s3://$BUCKET_NAME/backups/$FILENAME
-              
-              if [ $? -eq 0 ]; then
-                echo "✅ Backup concluído: $FILENAME"
-              else
-                echo "❌ Falha no backup!"
-                exit 1
-              fi
-            env:
-            - name: DB_HOST
-              value: "postgres"
-            - name: DB_USER
-              value: "admin"
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: infra-secrets
-                  key: database-password
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: aws-backup-creds
-                  key: access-key
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: aws-backup-creds
-                  key: secret-key
-            - name: AWS_DEFAULT_REGION
-              valueFrom:
-                secretKeyRef:
-                  name: aws-backup-creds
-                  key: region
-            - name: BUCKET_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: aws-backup-creds
-                  key: bucket
+            - name: postgres-backup
+              image: postgres:16-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  set -o pipefail
+
+                  echo "Iniciando backup para S3..."
+                  DATE=$(date +%Y-%m-%d_%H-%M-%S)
+                  FILENAME="backup_all_$DATE.sql.gz"
+
+                  # Instalar AWS CLI no Alpine
+                  apk add --no-cache aws-cli
+
+                  export PGPASSWORD=$DB_PASSWORD
+                  echo "📦 Executando pg_dumpall de $DB_HOST..."
+
+                  # Dump Direto para o S3 via Pipe
+                  pg_dumpall -h $DB_HOST -U $DB_USER | gzip | aws s3 cp - s3://$BUCKET_NAME/backups/$FILENAME
+
+                  echo "✅ Backup concluído e enviado: $FILENAME"
+              env:
+                - name: DB_HOST
+                  value: "postgres"
+                - name: DB_USER
+                  value: "admin"
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: infra-secrets
+                      key: database-password
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-backup-creds
+                      key: access-key
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-backup-creds
+                      key: secret-key
+                - name: AWS_DEFAULT_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-backup-creds
+                      key: region
+                - name: BUCKET_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-backup-creds
+                      key: bucket
           restartPolicy: OnFailure
